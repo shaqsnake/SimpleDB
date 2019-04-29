@@ -25,12 +25,21 @@ typedef enum
 typedef enum
 {
     PREPARE_SUCCESS,
-    PREPARE_FAIL
+    PREPARE_FAIL,
+    PREPARE_SYSTAX_ERROR
 } PrepareResult;
+
+typedef struct Row
+{
+    u_int32_t id;
+    char username[32];
+    char email[255];
+} Row;
 
 typedef struct Statement
 {
     StatementType type;
+    Row row_to_insert;
 } Statement;
 
 InputBuffer *new_input_buffer()
@@ -81,6 +90,11 @@ PrepareResult prepare_statement(InputBuffer *input_buffer, Statement *statement)
     if (strncmp(input_buffer->buffer, "insert", 6) == 0)
     {
         statement->type = STATEMENT_INSERT;
+        int args_assigned = sscanf(input_buffer->buffer, "insert %d %s %s", &(statement->row_to_insert.id), statement->row_to_insert.username, statement->row_to_insert.email);
+        if (args_assigned < 3)
+        {
+            return PREPARE_SYSTAX_ERROR;
+        }
         return PREPARE_SUCCESS;
     }
     if (strncmp(input_buffer->buffer, "select", 6) == 0)
@@ -88,7 +102,7 @@ PrepareResult prepare_statement(InputBuffer *input_buffer, Statement *statement)
         statement->type = STATEMENT_SELECT;
         return PREPARE_SUCCESS;
     }
-    
+
     return PREPARE_FAIL;
 }
 
@@ -131,6 +145,9 @@ void main(int argc, const char *argv[])
         {
         case (PREPARE_SUCCESS):
             break;
+        case (PREPARE_SYSTAX_ERROR):
+            printf("Syntax error. Could not parse statement.\n");
+            continue;
         case (PREPARE_FAIL):
             printf("Unrecognized keyword at start of '%s'.\n", input_buffer->buffer);
             continue;
