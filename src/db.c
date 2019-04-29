@@ -3,45 +3,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <stdint.h>
-
-typedef struct InputBuffer
-{
-    char *buffer;
-    size_t buf_size;
-    ssize_t input_len;
-} InputBuffer;
-
-typedef enum
-{
-    META_COMMAND_SUCCESS,
-    META_COMMAND_FAIL
-} MetaCommandResult;
-
-typedef enum
-{
-    STATEMENT_INSERT,
-    STATEMENT_SELECT,
-} StatementType;
-
-typedef enum
-{
-    PREPARE_SUCCESS,
-    PREPARE_FAIL,
-    PREPARE_SYSTAX_ERROR
-} PrepareResult;
-
-typedef struct Row
-{
-    uint32_t id;
-    char username[32];
-    char email[255];
-} Row;
-
-typedef struct Statement
-{
-    StatementType type;
-    Row row_to_insert;
-} Statement;
+#include "db.h"
 
 InputBuffer *new_input_buffer()
 {
