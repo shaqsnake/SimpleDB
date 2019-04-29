@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <stdint.h>
 
 typedef struct InputBuffer
 {
@@ -31,7 +32,7 @@ typedef enum
 
 typedef struct Row
 {
-    u_int32_t id;
+    uint32_t id;
     char username[32];
     char email[255];
 } Row;
@@ -146,7 +147,7 @@ void main(int argc, const char *argv[])
         case (PREPARE_SUCCESS):
             break;
         case (PREPARE_SYSTAX_ERROR):
-            printf("Syntax error. Could not parse statement.\n");
+            printf("Syntax error. Could not parse statement '%s'.\n", input_buffer->buffer);
             continue;
         case (PREPARE_FAIL):
             printf("Unrecognized keyword at start of '%s'.\n", input_buffer->buffer);
