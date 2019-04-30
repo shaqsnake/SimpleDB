@@ -27,6 +27,12 @@ typedef enum
     PREPARE_SYSTAX_ERROR
 } PrepareResult;
 
+typedef enum
+{
+    EXECUTE_SUCCESS,
+    EXECUTE_TABLE_FULL
+} ExecuteResult;
+
 typedef struct Row_t
 {
     uint32_t id;
@@ -60,7 +66,8 @@ const uint32_t ROWS_PER_PAGE = PAGE_SIZE / (ID_SIZE + USERNAME_SIZE + EMAIL_SIZE
 // const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
 const uint32_t TABLE_MAX_ROWS = PAGE_SIZE / (ID_SIZE + USERNAME_SIZE + EMAIL_SIZE) * TABLE_MAX_PAGES;
 
-typedef struct Table_t{
+typedef struct Table_t
+{
     uint32_t num_rows;
-    void * pages[TABLE_MAX_PAGES];
+    void *pages[TABLE_MAX_PAGES];
 } Table;
