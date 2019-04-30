@@ -151,7 +151,7 @@ ExecuteResult execute_statement(Statement *statement, Table *table)
     }
 }
 
-void main(int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
     Table *table = new_table();
     InputBuffer *input_buffer = new_input_buffer();
