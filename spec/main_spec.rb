@@ -21,9 +21,9 @@ describe 'database' do
       ".exit",
     ])
     expect(result).to match_array([
-      "sdb > Executed 'insert 1 user1 person1@example.com'.",
+      "sdb > Executed.",
       "sdb > 1, user1, person1@example.com",
-      "Executed 'select'.",
+      "Executed.",
       "sdb > ",
     ])
   end
@@ -35,5 +35,22 @@ describe 'database' do
     script << ".exit"
     result = run_script(script)
     expect(result[-2]).to eq('sdb > Error: Table full.')
+  end
+
+  it 'allows inserting strings that are the maximum length' do
+    long_username = "a"*32
+    long_email = "a"*255
+    script = [
+      "insert 1 #{long_username} #{long_email}",
+      "select",
+      ".exit",
+    ]
+    result = run_script(script)
+    expect(result).to match_array([
+      "sdb > Executed.",
+      "sdb > 1, #{long_username}, #{long_email}",
+      "Executed.",
+      "sdb > ",
+    ])
   end
 end
