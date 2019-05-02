@@ -22,7 +22,7 @@ describe 'database' do
     ])
     expect(result).to match_array([
       "sdb > Executed.",
-      "sdb > 1, user1, person1@example.com",
+      "sdb > (1, user1, person1@example.com)",
       "Executed.",
       "sdb > ",
     ])
@@ -48,7 +48,7 @@ describe 'database' do
     result = run_script(script)
     expect(result).to match_array([
       "sdb > Executed.",
-      "sdb > 1, #{long_username}, #{long_email}",
+      "sdb > (1, #{long_username}, #{long_email})",
       "Executed.",
       "sdb > ",
     ])

@@ -135,7 +135,7 @@ ExecuteResult execute_select(Statement *statement, Table *table)
     for (uint32_t i = 0; i < table->num_rows; i++)
     {
         deserialize_row(row_slot(table, i), &row);
-        printf("%d, %s, %s\n", row.id, row.username, row.email);
+        printf("(%d, %s, %s)\n", row.id, row.username, row.email);
     }
     return EXECUTE_SUCCESS;
 }
