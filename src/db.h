@@ -24,7 +24,9 @@ typedef enum
 {
     PREPARE_SUCCESS,
     PREPARE_FAIL,
-    PREPARE_SYSTAX_ERROR
+    PREPARE_SYNTAX_ERROR,
+    PREPARE_STRING_TOO_LONG,
+    PREPARE_NEGATIVE_ID
 } PrepareResult;
 
 typedef enum

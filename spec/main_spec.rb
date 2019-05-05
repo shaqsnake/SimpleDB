@@ -29,7 +29,7 @@ describe 'database' do
   end
 
   it 'prints error message when table is full' do
-    script = (1..1401).map do |i|
+    script = (1..1451).map do |i|
       "insert #{i} user#{i} person#{i}@example.com"
     end
     script << ".exit"
@@ -50,6 +50,36 @@ describe 'database' do
       "sdb > Executed.",
       "sdb > (1, #{long_username}, #{long_email})",
       "Executed.",
+      "sdb > ",
+    ])
+  end
+
+  it 'prints error message if strings are too long' do
+    long_username = "a"*33
+    long_email = "a"*256
+    script = [
+      "insert 1 #{long_username} #{long_email}",
+      "select",
+      ".exit",
+    ]
+    result = run_script(script)
+    expect(result).to match_array([
+      "sdb > String is too long.",
+      "sdb > Executed.",
+      "sdb > ",
+    ])
+  end
+
+  it 'prints an error message if id is negative' do
+    script = [
+      "insert -1 cstack foo@bar.com",
+      "select",
+      ".exit",
+    ]
+    result = run_script(script)
+    expect(result).to match_array([
+      "sdb > ID must be positive.",
+      "sdb > Executed.",
       "sdb > ",
     ])
   end
