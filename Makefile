@@ -1,6 +1,6 @@
 db: src/db.c
 	mkdir -p build
-	gcc src/db.c -o build/db
+	clang src/db.c -o build/db
 
 run: db
 	build/db
