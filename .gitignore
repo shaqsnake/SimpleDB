@@ -56,3 +56,6 @@ dkms.conf
 
 # Build
 build/
+
+# DB file
+*.db
