@@ -74,22 +74,26 @@ Table *db_open(const char *filename)
     return table;
 }
 
-void pager_flush(Pager *pager, uint32_t page_num, uint32_t size) {
-    if (pager->pages[page_num] == NULL) {
+void pager_flush(Pager *pager, uint32_t page_num, uint32_t size)
+{
+    if (pager->pages[page_num] == NULL)
+    {
         printf("Tried to flush null page.\n");
         exit(EXIT_FAILURE);
     }
 
     off_t offset = lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
 
-    if (offset == -1) {
+    if (offset == -1)
+    {
         printf("Error seeking: %d\n", errno);
         exit(EXIT_FAILURE);
     }
 
     ssize_t bytes_written = write(pager->file_descriptor, pager->pages[page_num], size);
 
-    if (bytes_written == -1) {
+    if (bytes_written == -1)
+    {
         printf("Error writting: %d\n", errno);
         exit(EXIT_FAILURE);
     }
@@ -104,16 +108,18 @@ void db_close(Table *table)
     {
         if (pager->pages[i] == NULL)
             continue;
-        
+
         pager_flush(pager, i, PAGE_SIZE);
         free(pager->pages[i]);
         pager->pages[i] = NULL;
     }
 
     uint32_t num_additional_rows = table->num_rows % ROWS_PER_PAGE;
-    if (num_additional_rows > 0) {
+    if (num_additional_rows > 0)
+    {
         uint32_t page_num = num_full_pages;
-        if (pager->pages[page_num] != NULL) {
+        if (pager->pages[page_num] != NULL)
+        {
             pager_flush(pager, page_num, num_additional_rows * ROW_SIZE);
             free(pager->pages[page_num]);
             pager->pages[page_num] = NULL;
@@ -121,13 +127,16 @@ void db_close(Table *table)
     }
 
     int res = close(pager->file_descriptor);
-    if (res == -1) {
+    if (res == -1)
+    {
         printf("Error closing db file.\n");
         exit(EXIT_FAILURE);
     }
-    for (uint32_t i = 0; i < TABLE_MAX_PAGES; i++) {
+    for (uint32_t i = 0; i < TABLE_MAX_PAGES; i++)
+    {
         void *page = pager->pages[i];
-        if (page) {
+        if (page)
+        {
             free(page);
             pager->pages[i] = NULL;
         }
@@ -250,13 +259,41 @@ void *get_page(Pager *pager, uint32_t page_num)
     return pager->pages[page_num];
 }
 
-void *row_slot(Table *table, uint32_t row_num)
+Cursor *table_start(Table *table)
 {
+    Cursor *cursor = malloc(sizeof(Cursor));
+    cursor->table = table;
+    cursor->row_num = 0;
+    cursor->end_of_table = (table->num_rows == 0);
+
+    return cursor;
+}
+
+Cursor *table_end(Table *table)
+{
+    Cursor *cursor = malloc(sizeof(Cursor));
+    cursor->table = table;
+    cursor->row_num = table->num_rows;
+    cursor->end_of_table = true;
+
+    return cursor;
+}
+
+void *cursor_value(Cursor *cursor)
+{
+    uint32_t row_num = cursor->row_num;
     uint32_t page_num = row_num / ROWS_PER_PAGE;
-    void *page = get_page(table->pager, page_num);
+    void *page = get_page(cursor->table->pager, page_num);
     uint32_t row_offset = row_num % ROWS_PER_PAGE;
     uint32_t byte_offset = row_offset * ROW_SIZE;
     return page + byte_offset;
+}
+
+void cursor_advance(Cursor *cursor)
+{
+    cursor->row_num += 1;
+    if (cursor->row_num > cursor->table->num_rows)
+        cursor->end_of_table = true;
 }
 
 ExecuteResult execute_insert(Statement *statement, Table *table)
@@ -268,20 +305,30 @@ ExecuteResult execute_insert(Statement *statement, Table *table)
 
     Row *row_to_insert = &(statement->row_to_insert);
 
-    serialize_row(row_to_insert, row_slot(table, table->num_rows));
+    Cursor *cursor = table_end(table);
+
+    serialize_row(row_to_insert, cursor_value(cursor));
     table->num_rows += 1;
+
+    free(cursor);
 
     return EXECUTE_SUCCESS;
 }
 
 ExecuteResult execute_select(Statement *statement, Table *table)
 {
+    Cursor *cursor = table_start(table);
+
     Row row;
-    for (uint32_t i = 0; i < table->num_rows; i++)
+    while (!(cursor->end_of_table))
     {
-        deserialize_row(row_slot(table, i), &row);
+        deserialize_row(cursor_value(cursor), &row);
         printf("(%d, %s, %s)\n", row.id, row.username, row.email);
+        cursor_advance(cursor);
     }
+
+    free(cursor);
+
     return EXECUTE_SUCCESS;
 }
 
@@ -297,8 +344,9 @@ ExecuteResult execute_statement(Statement *statement, Table *table)
 }
 
 int main(int argc, const char *argv[])
-{   
-    if (argc < 2) {
+{
+    if (argc < 2)
+    {
         printf("Must supply a database filename.\n");
         exit(EXIT_FAILURE);
     }

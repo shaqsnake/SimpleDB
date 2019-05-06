@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #define COLUMN_USERNAME_SIZE 32
 #define COLUMN_EMAIL_SIZE 255
 
@@ -62,7 +64,8 @@ const uint32_t ROWS_PER_PAGE = PAGE_SIZE / ROW_SIZE;
 #define TABLE_MAX_PAGES 100
 const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
 
-typedef struct Pager_t {
+typedef struct Pager_t
+{
     int file_descriptor;
     uint32_t file_length;
     void *pages[TABLE_MAX_PAGES];
@@ -73,3 +76,10 @@ typedef struct Table_t
     Pager *pager;
     uint32_t num_rows;
 } Table;
+
+typedef struct Cursor_t
+{
+    Table *table;
+    uint32_t row_num;
+    bool end_of_table;
+} Cursor;
