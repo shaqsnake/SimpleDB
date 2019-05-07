@@ -126,4 +126,25 @@ describe 'database' do
       "sdb > ",
     ])
   end
+
+  it 'allows printing out the structure of a one-node btree' do
+    script = [3, 1, 2].map do |i|
+      "insert #{i} user#{i} person#{i}@example.com"
+    end
+    script << ".btree"
+    script << ".exit"
+    result = run_script(script)
+  
+    expect(result).to match_array([
+      "sdb > Executed.",
+      "sdb > Executed.",
+      "sdb > Executed.",
+      "sdb > Tree:",
+      "leaf (size 3)",
+      "  - 0 : 3",
+      "  - 1 : 1",
+      "  - 2 : 2",
+      "sdb > "
+    ])
+  end
 end

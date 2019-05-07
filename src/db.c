@@ -194,6 +194,16 @@ void print_constants() {
     printf("LEAF_NODE_MAX_CELLS: %d\n", LEAF_NODE_MAX_CELLS);
 }
 
+void print_leaf_node(void *node)
+{
+    uint32_t num_cells = *leaf_node_num_cells(node);
+    printf("leaf (size %d)\n", num_cells);
+    for (uint32_t i = 0; i < num_cells; ++i) {
+        u_int32_t key = *leaf_node_key(node, i);
+        printf("  - %d : %d\n", i, key);
+    }
+}
+
 MetaCommandResult exec_meta_command(InputBuffer *input_buffer, Table *table)
 {
     if (strcmp(input_buffer->buffer, ".exit") == 0)
@@ -206,6 +216,12 @@ MetaCommandResult exec_meta_command(InputBuffer *input_buffer, Table *table)
     {
         printf("Constants:\n");
         print_constants();
+        return META_COMMAND_SUCCESS;
+    }
+    else if (strcmp(input_buffer->buffer, ".btree") == 0)
+    {
+        printf("Tree:\n");
+        print_leaf_node(get_page(table->pager, 0));
         return META_COMMAND_SUCCESS;
     }
     else
