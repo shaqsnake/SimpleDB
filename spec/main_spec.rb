@@ -141,10 +141,27 @@ describe 'database' do
       "sdb > Executed.",
       "sdb > Tree:",
       "leaf (size 3)",
-      "  - 0 : 3",
-      "  - 1 : 1",
-      "  - 2 : 2",
+      "  - 0 : 1",
+      "  - 1 : 2",
+      "  - 2 : 3",
       "sdb > "
+    ])
+  end
+
+  it 'prints an error message if there is a duplicate id' do
+    script = [
+      "insert 1 user1 person1@example.com",
+      "insert 1 user1 person1@example.com",
+      "select",
+      ".exit",
+    ]
+    result = run_script(script)
+    expect(result).to match_array([
+      "sdb > Executed.",
+      "sdb > Error: Duplicate key.",
+      "sdb > (1, user1, person1@example.com)",
+      "Executed.",
+      "sdb > ",
     ])
   end
 end

@@ -34,7 +34,8 @@ typedef enum
 typedef enum
 {
     EXECUTE_SUCCESS,
-    EXECUTE_TABLE_FULL
+    EXECUTE_TABLE_FULL,
+    EXECUTE_DUPLICATE_KEY
 } ExecuteResult;
 
 typedef struct Row_t
@@ -137,4 +138,19 @@ void *leaf_node_value(void *node, uint32_t cell_num)
     return leaf_node_cell(node, cell_num) + LEAF_NODE_VALUE_OFFSET;
 }
 
-void initialize_leaf_node(void *node) { *leaf_node_num_cells(node) = 0; }
+void set_node_type(void* node, NodeType type) {
+    uint8_t res = type;
+    *((uint8_t *)(node + NODE_TYPE_OFFSET)) = res;
+}
+
+NodeType get_node_type(void *node)
+{
+    uint8_t res = *((uint8_t *)(node + NODE_TYPE_OFFSET));
+    return (NodeType)res;
+}
+
+void initialize_leaf_node(void *node)
+{
+    set_node_type(node, NODE_LEAF);
+    *leaf_node_num_cells(node) = 0;
+}
