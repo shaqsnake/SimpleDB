@@ -138,7 +138,8 @@ void *leaf_node_value(void *node, uint32_t cell_num)
     return leaf_node_cell(node, cell_num) + LEAF_NODE_VALUE_OFFSET;
 }
 
-void set_node_type(void* node, NodeType type) {
+void set_node_type(void *node, NodeType type)
+{
     uint8_t res = type;
     *((uint8_t *)(node + NODE_TYPE_OFFSET)) = res;
 }
@@ -149,8 +150,90 @@ NodeType get_node_type(void *node)
     return (NodeType)res;
 }
 
+void set_node_root(void *node, bool is_root)
+{
+    uint8_t value = is_root;
+    *((uint8_t *)(node + IS_ROOT_OFFSET)) = value;
+}
+
+const uint32_t LEAF_NODE_RIGHT_SPLIT_COUNT = (LEAF_NODE_MAX_CELLS + 1) / 2;
+
+const uint32_t LEAF_NODE_LEFT_SPLIT_COUNT = LEAF_NODE_MAX_CELLS + 1 - LEAF_NODE_RIGHT_SPLIT_COUNT;
+
+/*
+ * Internal Node Header Layout
+ */
+const uint32_t INTERNAL_NODE_NUM_KEYS_SIZE = sizeof(uint32_t);
+const uint32_t INTERNAL_NODE_NUM_KEYS_OFFSET = COMMON_NODE_HEADER_SIZE;
+const uint32_t INTERNAL_NODE_RIGHT_CHILD_SIZE = sizeof(uint32_t);
+const uint32_t INTERNAL_NODE_RIGHT_CHILD_OFFSET = INTERNAL_NODE_NUM_KEYS_OFFSET + INTERNAL_NODE_NUM_KEYS_SIZE;
+const uint32_t INTERNAL_NODE_HEADER_SIZE = COMMON_NODE_HEADER_SIZE + INTERNAL_NODE_NUM_KEYS_SIZE + INTERNAL_NODE_RIGHT_CHILD_SIZE;
+
+/*
+ * Internal Node Body Layout
+ */
+const int32_t INTERNAL_NODE_KEY_SIZE = sizeof(uint32_t);
+const int32_t INTERNAL_NODE_CHILD_SIZE = sizeof(uint32_t);
+const int32_t INTERNAL_NODE_CELL_SIZE = INTERNAL_NODE_KEY_SIZE + INTERNAL_NODE_CHILD_SIZE;
+
+uint32_t *internal_node_num_keys(void *node)
+{
+    return node + INTERNAL_NODE_NUM_KEYS_OFFSET;
+}
+
+uint32_t *internal_node_right_child(void *node)
+{
+    return node + INTERNAL_NODE_RIGHT_CHILD_OFFSET;
+}
+
+uint32_t *internal_node_cell(void *node, uint32_t cell_num)
+{
+    return node + INTERNAL_NODE_HEADER_SIZE + cell_num * INTERNAL_NODE_CELL_SIZE;
+}
+
+uint32_t *internal_node_child(void *node, uint32_t child_num)
+{
+    uint32_t num_keys = *internal_node_num_keys(node);
+    if (child_num > num_keys)
+    {
+        printf("Tried to access child_num %d > num_keys %d.\n", child_num, num_keys);
+        exit(EXIT_FAILURE);
+    }
+    else if (child_num == num_keys)
+    {
+        return internal_node_right_child(node);
+    }
+    else
+    {
+        return internal_node_child(node, child_num);
+    }
+}
+
+uint32_t *internal_node_key(void *node, uint32_t key_num)
+{
+    return internal_node_cell(node, key_num) + INTERNAL_NODE_CHILD_SIZE;
+}
+
+uint32_t get_node_max_key(void *node)
+{
+    switch (get_node_type(node))
+    {
+    case NODE_INTERNAL:
+        return *internal_node_key(node, *internal_node_num_keys(node) - 1);
+    case NODE_LEAF:
+        return *leaf_node_key(node, *leaf_node_num_cells(node) - 1);
+    }
+}
+
 void initialize_leaf_node(void *node)
 {
-    set_node_type(node, NODE_LEAF);
+    set_node_type(node, false);
     *leaf_node_num_cells(node) = 0;
+}
+
+void initialize_internal_node(void *node)
+{
+    set_node_type(node, NODE_INTERNAL);
+    set_node_root(node, false);
+    *internal_node_num_keys(node) = 0;
 }
