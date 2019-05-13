@@ -227,7 +227,8 @@ uint32_t get_node_max_key(void *node)
 
 void initialize_leaf_node(void *node)
 {
-    set_node_type(node, false);
+    set_node_type(node, NODE_LEAF);
+    set_node_root(node, false);
     *leaf_node_num_cells(node) = 0;
 }
 
