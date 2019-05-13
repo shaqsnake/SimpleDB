@@ -205,7 +205,7 @@ uint32_t *internal_node_child(void *node, uint32_t child_num)
     }
     else
     {
-        return internal_node_child(node, child_num);
+        return internal_node_cell(node, child_num);
     }
 }
 

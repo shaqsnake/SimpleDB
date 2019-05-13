@@ -196,14 +196,50 @@ void print_constants()
     printf("LEAF_NODE_MAX_CELLS: %d\n", LEAF_NODE_MAX_CELLS);
 }
 
-void print_leaf_node(void *node)
+void indent(uint32_t level)
 {
-    uint32_t num_cells = *leaf_node_num_cells(node);
-    printf("leaf (size %d)\n", num_cells);
-    for (uint32_t i = 0; i < num_cells; ++i)
+    for (uint32_t i = 0; i < level; i++)
     {
-        u_int32_t key = *leaf_node_key(node, i);
-        printf("  - %d : %d\n", i, key);
+        printf("  ");
+    }
+}
+
+void print_tree(Pager *pager, uint32_t page_num, uint32_t indentation_level)
+{
+    void *node = get_page(pager, page_num);
+    uint32_t num_keys, child;
+
+    switch (get_node_type(node))
+    {
+    case NODE_LEAF:
+        num_keys = *leaf_node_num_cells(node);
+        indent(indentation_level);
+        printf("- leaf (size %d)\n", num_keys);
+        for (uint32_t i = 0; i < num_keys; i++)
+        {
+            indent(indentation_level + 1);
+            printf("- %d\n", *leaf_node_key(node, i));
+        }
+        break;
+
+    case NODE_INTERNAL:
+        num_keys = *internal_node_num_keys(node);
+        indent(indentation_level);
+        printf("- internal (size %d)\n", num_keys);
+        for (uint32_t i = 0; i < num_keys; i++)
+        {
+            child = *internal_node_child(node, i);
+            print_tree(pager, child, indentation_level + 1);
+
+            indent(indentation_level + 1);
+            printf("- key %d\n", *internal_node_key(node, i));
+        }
+        child = *internal_node_right_child(node);
+        print_tree(pager, child, indentation_level + 1);
+        break;
+
+    default:
+        break;
     }
 }
 
@@ -224,7 +260,7 @@ MetaCommandResult exec_meta_command(InputBuffer *input_buffer, Table *table)
     else if (strcmp(input_buffer->buffer, ".btree") == 0)
     {
         printf("Tree:\n");
-        print_leaf_node(get_page(table->pager, 0));
+        print_tree(table->pager, 0, 0);
         return META_COMMAND_SUCCESS;
     }
     else
@@ -463,20 +499,20 @@ void leaf_node_split_and_insert(Cursor *cursor, uint32_t key, Row *value)
         {
             memcpy(destination, leaf_node_cell(old_node, i), LEAF_NODE_CELL_SIZE);
         }
+    }
 
-        // Update cell count on both leaf nodes
-        *(leaf_node_num_cells(old_node)) = LEAF_NODE_LEFT_SPLIT_COUNT;
-        *(leaf_node_num_cells(new_node)) = LEAF_NODE_RIGHT_SPLIT_COUNT;
+    // Update cell count on both leaf nodes
+    *(leaf_node_num_cells(old_node)) = LEAF_NODE_LEFT_SPLIT_COUNT;
+    *(leaf_node_num_cells(new_node)) = LEAF_NODE_RIGHT_SPLIT_COUNT;
 
-        if (is_node_root(old_node))
-        {
-            return create_new_root(cursor->table, new_page_num);
-        }
-        else
-        {
-            printf("Need to implement updating parent after split.\n");
-            exit(EXIT_FAILURE);
-        }
+    if (is_node_root(old_node))
+    {
+        return create_new_root(cursor->table, new_page_num);
+    }
+    else
+    {
+        printf("Need to implement updating parent after split.\n");
+        exit(EXIT_FAILURE);
     }
 }
 
