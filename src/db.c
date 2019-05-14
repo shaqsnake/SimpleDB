@@ -39,6 +39,8 @@ void close_input_buffer(InputBuffer *input_buffer)
     free(input_buffer);
 }
 
+ExecuteResult execute_insert(Statement *statement, Table *table);
+
 Pager *pager_open(const char *filename)
 {
     int fd = open(filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
@@ -263,6 +265,19 @@ MetaCommandResult exec_meta_command(InputBuffer *input_buffer, Table *table)
         print_tree(table->pager, 0, 0);
         return META_COMMAND_SUCCESS;
     }
+    else if (strcmp(input_buffer->buffer, ".test") == 0)
+    {
+        Statement *statement = malloc(sizeof(Statement));
+        statement->type = STATEMENT_INSERT;
+        for (int i = 0; i < 20; ++i)
+        {
+            statement->row_to_insert.id = i;
+            strcpy(statement->row_to_insert.username, (char *)&i);
+            strcpy(statement->row_to_insert.email, (char *)&i);
+            execute_insert(statement, table);
+        }
+        return META_COMMAND_SUCCESS;
+    }
     else
     {
         return META_COMMAND_FAIL;
@@ -382,18 +397,23 @@ Cursor *leaf_node_find(Table *table, uint32_t page_num, uint32_t key)
     return cursor;
 }
 
-Cursor *internal_node_find(Table *table, uint32_t page_num, uint32_t key) {
+Cursor *internal_node_find(Table *table, uint32_t page_num, uint32_t key)
+{
     void *node = get_page(table->pager, page_num);
     uint32_t num_keys = *internal_node_num_keys(node);
 
     // Binary Search
     uint32_t min_index = 0, max_index = num_keys;
-    while (min_index != max_index) {
+    while (min_index != max_index)
+    {
         uint32_t index = (min_index + max_index) / 2;
         uint32_t key_to_right = *internal_node_key(node, index);
-        if (key_to_right >= key) {
+        if (key_to_right >= key)
+        {
             max_index = index;
-        } else {
+        }
+        else
+        {
             min_index = index + 1;
         }
     }
