@@ -269,11 +269,15 @@ MetaCommandResult exec_meta_command(InputBuffer *input_buffer, Table *table)
     {
         Statement *statement = malloc(sizeof(Statement));
         statement->type = STATEMENT_INSERT;
-        for (int i = 0; i < 20; ++i)
+        for (uint32_t i = 1; i < 20; ++i)
         {
+            char username[10];
+            char email[20];
+            sprintf(username, "user%d", i);
+            sprintf(email, "user%d@gmail.com", i);
             statement->row_to_insert.id = i;
-            strcpy(statement->row_to_insert.username, (char *)&i);
-            strcpy(statement->row_to_insert.email, (char *)&i);
+            strcpy(statement->row_to_insert.username, username);
+            strcpy(statement->row_to_insert.email, email);
             execute_insert(statement, table);
         }
         return META_COMMAND_SUCCESS;
@@ -348,20 +352,6 @@ void deserialize_row(void *src, Row *dest)
     memcpy(&(dest->email), src + EMAIL_OFFSET, EMAIL_SIZE);
 }
 
-Cursor *table_start(Table *table)
-{
-    Cursor *cursor = malloc(sizeof(Cursor));
-    cursor->table = table;
-    cursor->page_num = table->root_page_num;
-    cursor->cell_num = 0;
-
-    void *root_node = get_page(table->pager, table->root_page_num);
-    uint32_t num_cells = *leaf_node_num_cells(root_node);
-    cursor->end_of_table = (num_cells == 0);
-
-    return cursor;
-}
-
 Cursor *leaf_node_find(Table *table, uint32_t page_num, uint32_t key)
 {
     void *node = get_page(table->pager, page_num);
@@ -428,6 +418,7 @@ Cursor *internal_node_find(Table *table, uint32_t page_num, uint32_t key)
         return internal_node_find(table, child_num, key);
     }
 }
+
 /*
 Return the position of the given key.
 If the key is not present, return the position where it should be inserted.
@@ -447,6 +438,18 @@ Cursor *table_find(Table *table, uint32_t key)
     }
 }
 
+Cursor *table_start(Table *table)
+{
+    Cursor *cursor = table_find(table, 0);
+
+    void *node = get_page(table->pager, cursor->page_num);
+    uint32_t num_cells = *leaf_node_num_cells(node);
+    cursor->end_of_table = (num_cells == 0);
+
+    return cursor;
+}
+
+
 void *cursor_value(Cursor *cursor)
 {
     uint32_t page_num = cursor->page_num;
@@ -460,8 +463,16 @@ void cursor_advance(Cursor *cursor)
     void *node = get_page(cursor->table->pager, page_num);
 
     cursor->cell_num += 1;
-    if (cursor->cell_num >= (*leaf_node_num_cells(node)))
-        cursor->end_of_table = true;
+    if (cursor->cell_num >= (*leaf_node_num_cells(node))) {
+        // Advance to next leaf node.
+        uint32_t next_page_num = *leaf_node_next_leaf(node);
+        if (next_page_num == 0) {
+            cursor->end_of_table = true;
+        } else {
+            cursor->page_num = next_page_num;
+            cursor->cell_num = 0;
+        }
+    }
 }
 
 /*
@@ -513,6 +524,8 @@ void leaf_node_split_and_insert(Cursor *cursor, uint32_t key, Row *value)
     int32_t new_page_num = get_unused_page_num(cursor->table->pager);
     void *new_node = get_page(cursor->table->pager, new_page_num);
     initialize_leaf_node(new_node);
+    *leaf_node_next_leaf(new_node) = *leaf_node_next_leaf(old_node);
+    *leaf_node_next_leaf(old_node) = new_page_num;
 
     /*
      * All existing keys plus new key should be divided
@@ -535,7 +548,8 @@ void leaf_node_split_and_insert(Cursor *cursor, uint32_t key, Row *value)
 
         if (i == cursor->cell_num)
         {
-            serialize_row(value, destination);
+            serialize_row(value, leaf_node_value(destination_node, index_within_node));
+            *leaf_node_key(destination_node, index_within_node) = key;
         }
         else if (i > cursor->cell_num)
         {
