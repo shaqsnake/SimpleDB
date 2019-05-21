@@ -269,7 +269,7 @@ MetaCommandResult exec_meta_command(InputBuffer *input_buffer, Table *table)
     {
         Statement *statement = malloc(sizeof(Statement));
         statement->type = STATEMENT_INSERT;
-        for (uint32_t i = 1; i < 20; ++i)
+        for (uint32_t i = 1; i <= 34; ++i)
         {
             char username[10];
             char email[20];
@@ -278,7 +278,7 @@ MetaCommandResult exec_meta_command(InputBuffer *input_buffer, Table *table)
             statement->row_to_insert.id = i;
             strcpy(statement->row_to_insert.username, username);
             strcpy(statement->row_to_insert.email, email);
-            printf("insert id:%d\n", i);
+            printf("Insert #%d\n", i);
             execute_insert(statement, table);
         }
         return META_COMMAND_SUCCESS;
