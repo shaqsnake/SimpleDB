@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/stat.h>
-#include "db.h"
+#include "include/db.h"
 
 InputBuffer *new_input_buffer()
 {
